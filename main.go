@@ -47,7 +47,6 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
-//
 type ignoreNamespace []string
 
 func (i *ignoreNamespace) String() string {
