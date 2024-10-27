@@ -51,6 +51,7 @@ type Config struct {
 	AgentAPIKey             string   `long:"agentAPIKey" env:"SIDECAR_AGENT_API_KEY" description:"Mackerel API Key for the injected agent"`
 	AgentKubeletPort        int      `long:"agentKubeletPort" env:"SIDECAR_AGENT_KUBELET_PORT" default:"-1" description:"Kubelet port"`
 	AgentKubeletInsecureTLS bool     `long:"agentKubeletInsecureTLS" env:"SIDECAR_AGENT_KUBELET_INSECURE_PORT" description:"Skip verifying Kubelet host"`
+	AgentImage              string   `long:"agentImage" env:"SIDECAR_AGENT_IMAGE" default:"mackerel/mackerel-container-agent:plugins" description:"Mackerel agent image"`
 	IgnoreNamespaces        []string `long:"ignoreNamespace" description:"Do not inject mackerel-container-agent into the Pod of the specified Namespaces."`
 }
 
@@ -71,6 +72,7 @@ func main() {
 	podWebHook.AgentAPIKey = config.AgentAPIKey
 	podWebHook.AgentKubeletPort = config.AgentKubeletPort
 	podWebHook.AgentKubeletInsecureTLS = config.AgentKubeletInsecureTLS
+	podWebHook.Image = config.AgentImage
 	podWebHook.IgnoreNamespaces = append(podWebHook.IgnoreNamespaces, config.IgnoreNamespaces...)
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))

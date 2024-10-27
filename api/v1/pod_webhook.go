@@ -72,6 +72,7 @@ type PodWebhook struct {
 	AgentKubeletPort        int
 	AgentKubeletInsecureTLS bool
 	IgnoreNamespaces        []string
+	Image                   string
 }
 
 var _ admission.CustomDefaulter = &PodWebhook{}
@@ -263,9 +264,8 @@ func (r *PodWebhook) generateInjectedContainer(pod *corev1.Pod) (*corev1.Contain
 	}
 
 	agentContainer := &corev1.Container{
-		Name:            "mackerel-container-agent",
-		Image:           "mackerel/mackerel-container-agent:plugins",
-		ImagePullPolicy: corev1.PullAlways,
+		Name:  "mackerel-container-agent",
+		Image: r.Image,
 		Resources: corev1.ResourceRequirements{
 			Limits: corev1.ResourceList{
 				corev1.ResourceMemory: resource.MustParse("128Mi"),
