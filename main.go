@@ -48,9 +48,9 @@ type Config struct {
 	MetricsAddr             string   `long:"metrics-bind-address" default:":8080" description:"The address the metric endpoint binds to."`
 	ProveAddr               string   `long:"health-probe-bind-address" default:":8081" description:"The address the probe endpoint binds to."`
 	EnableLeaderElection    bool     `long:"leader-elect" description:"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager."`
-	AgentAPIKey             string   `long:"agentAPIKey" description:"Mackerel API Key for the injected agent"`
-	AgentKubeletPort        int      `long:"agentKubeletPort" default:"-1" description:"Kubelet port"`
-	AgentKubeletInsecureTLS bool     `long:"agentKubeletInsecureTLS" description:"Skip verifying Kubelet host"`
+	AgentAPIKey             string   `long:"agentAPIKey" env:"SIDECAR_AGENT_API_KEY" description:"Mackerel API Key for the injected agent"`
+	AgentKubeletPort        int      `long:"agentKubeletPort" env:"SIDECAR_AGENT_KUBELET_PORT" default:"-1" description:"Kubelet port"`
+	AgentKubeletInsecureTLS bool     `long:"agentKubeletInsecureTLS" env:"SIDECAR_AGENT_KUBELET_INSECURE_PORT" description:"Skip verifying Kubelet host"`
 	IgnoreNamespaces        []string `long:"ignoreNamespace" description:"Do not inject mackerel-container-agent into the Pod of the specified Namespaces."`
 }
 
