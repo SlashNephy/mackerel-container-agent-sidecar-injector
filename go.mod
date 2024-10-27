@@ -1,6 +1,6 @@
 module github.com/mackerelio-labs/mackerel-container-agent-sidecar-injector
 
-go 1.17
+go 1.23.2
 
 require (
 	k8s.io/api v0.23.5
