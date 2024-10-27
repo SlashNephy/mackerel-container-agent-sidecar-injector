@@ -18,12 +18,9 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-
+	"github.com/jessevdk/go-flags"
 	v1 "github.com/mackerelio-labs/mackerel-container-agent-sidecar-injector/api/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
@@ -47,52 +44,43 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
-type ignoreNamespace []string
-
-func (i *ignoreNamespace) String() string {
-	return fmt.Sprintf("%v", *i)
-}
-
-func (i *ignoreNamespace) Set(v string) error {
-	*i = append(*i, v)
-	return nil
+type Config struct {
+	MetricsAddr             string   `long:"metrics-bind-address" default:":8080" description:"The address the metric endpoint binds to."`
+	ProveAddr               string   `long:"health-probe-bind-address" default:":8081" description:"The address the probe endpoint binds to."`
+	EnableLeaderElection    bool     `long:"leader-elect" description:"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager."`
+	AgentAPIKey             string   `long:"agentAPIKey" description:"Mackerel API Key for the injected agent"`
+	AgentKubeletPort        int      `long:"agentKubeletPort" default:"-1" description:"Kubelet port"`
+	AgentKubeletInsecureTLS bool     `long:"agentKubeletInsecureTLS" description:"Skip verifying Kubelet host"`
+	IgnoreNamespaces        []string `long:"ignoreNamespace" description:"Do not inject mackerel-container-agent into the Pod of the specified Namespaces."`
 }
 
 func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	var probeAddr string
-	var ignoreNamespaces ignoreNamespace
-
-	podWebHook := v1.NewPodWebHook()
-
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
-	flag.StringVar(&podWebHook.AgentAPIKey, "agentAPIKey", "", "Mackerel API Key for the injected agent")
-	flag.IntVar(&podWebHook.AgentKubeletPort, "agentKubeletPort", -1, "Kubelet port")
-	flag.BoolVar(&podWebHook.AgentKubeletInsecureTLS, "agentKubeletInsecureTLS", true, "Skip verifying Kubelet host")
-	flag.Var(&ignoreNamespaces, "ignoreNamespace", "Do not inject mackerel-container-agent into the Pod of the specified Namespaces.")
-
 	opts := zap.Options{
 		Development: true,
 	}
 	opts.BindFlags(flag.CommandLine)
 
-	flag.Parse()
+	var config Config
+	parser := flags.NewParser(&config, flags.Default)
+	if _, err := parser.Parse(); err != nil {
+		setupLog.Error(err, "unable to parse config")
+		os.Exit(1)
+	}
 
-	podWebHook.IgnoreNamespaces = append(podWebHook.IgnoreNamespaces, ignoreNamespaces...)
+	podWebHook := v1.NewPodWebHook()
+	podWebHook.AgentAPIKey = config.AgentAPIKey
+	podWebHook.AgentKubeletPort = config.AgentKubeletPort
+	podWebHook.AgentKubeletInsecureTLS = config.AgentKubeletInsecureTLS
+	podWebHook.IgnoreNamespaces = append(podWebHook.IgnoreNamespaces, config.IgnoreNamespaces...)
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
+		MetricsBindAddress:     config.MetricsAddr,
 		Port:                   9443,
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
+		HealthProbeBindAddress: config.ProveAddr,
+		LeaderElection:         config.EnableLeaderElection,
 		LeaderElectionID:       "75278439.mackerel.io",
 	})
 	if err != nil {
